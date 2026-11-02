@@ -1,0 +1,26 @@
+import js from '@eslint/js';
+import { defineConfig } from 'eslint/config';
+import prettier from 'eslint-config-prettier';
+import reactHooks from 'eslint-plugin-react-hooks';
+import globals from 'globals';
+import tseslint from 'typescript-eslint';
+
+export default defineConfig(
+  { ignores: ['**/dist/**', '**/node_modules/**', '**/coverage/**'] },
+  js.configs.recommended,
+  tseslint.configs.recommended,
+  {
+    files: ['client/**/*.{ts,tsx}'],
+    languageOptions: { globals: globals.browser },
+    plugins: { 'react-hooks': reactHooks },
+    rules: {
+      'react-hooks/rules-of-hooks': 'error',
+      'react-hooks/exhaustive-deps': 'warn',
+    },
+  },
+  {
+    files: ['server/**/*.ts', 'shared/**/*.ts', '*.{js,ts}', 'client/*.ts'],
+    languageOptions: { globals: globals.node },
+  },
+  prettier,
+);
