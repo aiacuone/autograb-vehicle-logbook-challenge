@@ -1,6 +1,6 @@
 # 0001. Repo structure
 
-Status: draft, awaiting owner review
+Status: accepted
 
 ## Context
 

@@ -1,6 +1,6 @@
 # 0026. Accessibility
 
-Status: draft, awaiting owner review
+Status: accepted
 
 ## Context
 

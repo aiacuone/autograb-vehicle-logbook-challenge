@@ -1,6 +1,6 @@
 # 0011. Where validation happens
 
-Status: draft, awaiting owner review
+Status: accepted
 
 ## Context
 

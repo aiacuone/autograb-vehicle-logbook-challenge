@@ -1,6 +1,6 @@
 # Architecture decision records
 
-One record per decision, with the options considered, the choice, and its consequences. All records are drafts awaiting owner review. Smaller choices, such as the package manager, the Node version, styling and lint tooling, are listed in the README's technical choices section.
+One record per decision, with the options considered, the choice, and its consequences. All records are accepted. Smaller choices, such as the package manager, the Node version, styling and lint tooling, are listed in the README's technical choices section.
 
 ## Key decisions
 

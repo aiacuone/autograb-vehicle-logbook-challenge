@@ -1,6 +1,6 @@
 # 0008. Upload handling
 
-Status: draft, awaiting owner review
+Status: accepted
 
 ## Context
 

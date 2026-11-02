@@ -1,6 +1,6 @@
 # 0005. Form state in the client
 
-Status: draft, awaiting owner review
+Status: accepted
 
 ## Context
 

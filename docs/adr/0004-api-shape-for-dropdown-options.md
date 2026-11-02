@@ -1,6 +1,6 @@
 # 0004. API shape for the dropdown options
 
-Status: draft, awaiting owner review
+Status: accepted
 
 ## Context
 

@@ -1,6 +1,6 @@
 # 0007. Where the result is shown
 
-Status: draft, awaiting owner review
+Status: accepted
 
 ## Context
 

@@ -1,6 +1,6 @@
 # 0003. Shared types and validation
 
-Status: draft, awaiting owner review
+Status: accepted
 
 ## Context
 

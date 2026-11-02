@@ -1,6 +1,6 @@
 # 0012. Vehicle data
 
-Status: draft, awaiting owner review
+Status: accepted
 
 ## Context
 

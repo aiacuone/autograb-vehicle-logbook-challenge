@@ -1,6 +1,6 @@
 # 0024. Logging
 
-Status: draft, awaiting owner review
+Status: accepted
 
 ## Context
 

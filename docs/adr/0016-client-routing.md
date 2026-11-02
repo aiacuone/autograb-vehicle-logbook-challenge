@@ -1,6 +1,6 @@
 # 0016. Client routing
 
-Status: draft, awaiting owner review
+Status: accepted
 
 ## Context
 

@@ -1,6 +1,6 @@
 # 0014. Security hardening
 
-Status: draft, awaiting owner review
+Status: accepted
 
 ## Context
 

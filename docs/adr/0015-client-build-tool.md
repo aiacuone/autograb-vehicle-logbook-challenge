@@ -1,6 +1,6 @@
 # 0015. Client build tool
 
-Status: draft, awaiting owner review
+Status: accepted
 
 ## Context
 

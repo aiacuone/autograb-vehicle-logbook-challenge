@@ -1,6 +1,6 @@
 # 0006. Testing approach
 
-Status: draft, awaiting owner review
+Status: accepted
 
 ## Context
 

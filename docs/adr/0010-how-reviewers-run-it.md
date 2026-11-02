@@ -1,6 +1,6 @@
 # 0010. How reviewers run the project
 
-Status: draft, awaiting owner review
+Status: accepted
 
 ## Context
 

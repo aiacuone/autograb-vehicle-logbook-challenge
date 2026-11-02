@@ -1,6 +1,6 @@
 # 0009. API error handling and response shape
 
-Status: draft, awaiting owner review
+Status: accepted
 
 ## Context
 
