@@ -19,7 +19,13 @@ export default defineConfig(
     },
   },
   {
-    files: ['server/**/*.ts', 'shared/**/*.ts', '*.{js,ts}', 'client/*.ts'],
+    files: [
+      'server/**/*.ts',
+      'shared/**/*.ts',
+      'e2e/**/*.ts',
+      '*.{js,ts}',
+      'client/*.ts',
+    ],
     languageOptions: { globals: globals.node },
   },
   prettier,
