@@ -14,6 +14,13 @@
   box-sizing: border-box;
 }
 
+/* Always leaves room for the scrollbar. Without it the form page, which is taller than a
+   small window, gets a scrollbar and the short result page does not, so the column moves
+   sideways when going between them. */
+html {
+  scrollbar-gutter: stable;
+}
+
 body {
   margin: 0;
   font-family:
@@ -142,6 +149,41 @@ select:disabled {
   background: var(--error-background);
   color: var(--error);
   font-weight: 600;
+}
+
+/* The result page */
+.vehicle-summary {
+  display: grid;
+  grid-template-columns: max-content 1fr;
+  gap: 0.25rem 1rem;
+  margin: 0 0 1.5rem;
+}
+
+.vehicle-summary dt {
+  font-weight: 600;
+}
+
+.vehicle-summary dd {
+  margin: 0;
+}
+
+h3 {
+  margin: 0 0 0.5rem;
+  font-size: 1.05rem;
+}
+
+/* Keeps the logbook's own line breaks, wraps long lines, and scrolls when it is very long */
+.logbook-text {
+  max-height: 60vh;
+  overflow: auto;
+  margin: 0 0 1.5rem;
+  padding: 0.75rem;
+  border: 1px solid var(--border);
+  border-radius: 0.25rem;
+  background: #ffffff;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  font-size: 0.9rem;
 }
 
 /* Focus is always visible. Do not remove or hide the outline anywhere in this file. */

@@ -1,6 +1,7 @@
 import { MAX_LOGBOOK_BYTES } from '@logbook/shared';
 import { render, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
+import { MemoryRouter, useLocation } from 'react-router';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { App } from './App';
 
@@ -54,6 +55,23 @@ afterEach(() => {
   vi.unstubAllGlobals();
 });
 
+/** Shows the router's current address, so a test can check where the app went. */
+function Address() {
+  return <span data-testid="address">{useLocation().pathname}</span>;
+}
+
+/** The app inside an in-memory router, starting at `path`. */
+function renderApp(path = '/') {
+  return render(
+    <MemoryRouter initialEntries={[path]}>
+      <App />
+      <Address />
+    </MemoryRouter>,
+  );
+}
+
+const address = () => screen.getByTestId('address').textContent;
+
 const dropdown = (name: string) => screen.getByRole('combobox', { name });
 
 function optionNames(name: string) {
@@ -64,7 +82,7 @@ function optionNames(name: string) {
 
 async function renderLoaded() {
   const user = userEvent.setup();
-  render(<App />);
+  renderApp();
   await waitFor(() => expect(dropdown('Make')).toBeEnabled());
   return user;
 }
@@ -94,7 +112,7 @@ describe('the page', () => {
 
 describe('the make dropdown', () => {
   it('says the makes are loading in the dropdown, then shows them by display name', async () => {
-    render(<App />);
+    renderApp();
     expect(dropdown('Make')).toBeDisabled();
     expect(optionNames('Make')).toEqual(['Loading makes…']);
 
@@ -109,7 +127,7 @@ describe('the make dropdown', () => {
 
   it('shows the error in place of the hint when the makes cannot be loaded', async () => {
     fetchMock.mockImplementation(() => json({ code: 'INTERNAL_ERROR' }, 500));
-    render(<App />);
+    renderApp();
     const message =
       'The makes could not be loaded. Refresh the page to try again.';
     expect(await screen.findByRole('alert')).toHaveTextContent(message);
@@ -274,7 +292,9 @@ describe('the upload', () => {
     await user.upload(fileInput(), logbook);
     await user.click(uploadButton());
 
-    expect(await screen.findByText(/^Uploaded\./)).toBeInTheDocument();
+    expect(
+      await screen.findByRole('heading', { name: 'Your logbook' }),
+    ).toBeInTheDocument();
     const body = posts()[0]![1].body as FormData;
     expect([body.get('make'), body.get('model'), body.get('badge')]).toEqual([
       'ford',
@@ -429,7 +449,10 @@ describe('the upload', () => {
     await waitFor(() =>
       expect(uploadButton()).toHaveTextContent('Upload logbook'),
     );
-    expect(screen.queryByText(/^Uploaded\./)).not.toBeInTheDocument();
+    expect(address()).toBe('/');
+    expect(
+      screen.queryByRole('heading', { name: 'Your logbook' }),
+    ).not.toBeInTheDocument();
   });
 
   it('empties the file input when a new choice clears the file', async () => {
@@ -443,5 +466,89 @@ describe('the upload', () => {
     await waitFor(() => expect(dropdown('Badge')).toHaveValue('Long Range'));
     expect(fileInput()).toHaveValue('');
     expect(uploadButton()).toBeDisabled();
+  });
+});
+
+describe('the result page', () => {
+  async function upload(text = 'trip log') {
+    fetchMock.mockImplementation((url: string, init?: RequestInit) =>
+      init?.method === 'POST'
+        ? json({
+            make: 'ford',
+            model: 'Ranger',
+            badge: 'Raptor',
+            logbook: text,
+          })
+        : fakeServer(url),
+    );
+    const user = await renderLoaded();
+    await chooseVehicle(user);
+    await user.upload(fileInput(), logbook);
+    await user.click(uploadButton());
+    await screen.findByRole('heading', { name: 'Your logbook' });
+    return user;
+  }
+
+  it('opens at /result after an upload, with focus on its heading', async () => {
+    await upload();
+    expect(address()).toBe('/result');
+    expect(screen.getByRole('heading', { name: 'Your logbook' })).toHaveFocus();
+  });
+
+  it('shows the vehicle with the make display name, and the logbook', async () => {
+    await upload('trip 1\nservice done');
+    expect(screen.getByText('Ford')).toBeInTheDocument();
+    expect(screen.getByText('Ranger')).toBeInTheDocument();
+    expect(screen.getByText('Raptor')).toBeInTheDocument();
+    expect(screen.getByRole('region', { name: 'Logbook' })).toHaveTextContent(
+      'trip 1 service done',
+    );
+  });
+
+  it('shows the logbook as plain text, never as HTML', async () => {
+    const html = '<b>bold</b><img src=x onerror="alert(1)">';
+    await upload(html);
+    const region = screen.getByRole('region', { name: 'Logbook' });
+    expect(region.textContent).toBe(html);
+    expect(region.querySelector('b, img')).toBeNull();
+  });
+
+  it('goes back to the form with the vehicle kept and the file input empty', async () => {
+    const user = await upload();
+    await user.click(screen.getByRole('link', { name: 'Back to the form' }));
+
+    expect(address()).toBe('/');
+    await waitFor(() => expect(dropdown('Badge')).toHaveValue('Raptor'));
+    expect(dropdown('Make')).toHaveValue('ford');
+    expect(dropdown('Model')).toHaveValue('Ranger');
+    expect(fileInput()).toHaveValue('');
+    expect(uploadButton()).toBeDisabled();
+  });
+
+  it('does not load the dropdown lists again when going back', async () => {
+    const user = await upload();
+    const gets = () =>
+      fetchMock.mock.calls.filter(([, init]) => init?.method !== 'POST').length;
+    const before = gets();
+    await user.click(screen.getByRole('link', { name: 'Back to the form' }));
+    await waitFor(() => expect(dropdown('Badge')).toBeEnabled());
+    expect(gets()).toBe(before);
+  });
+});
+
+describe('addresses', () => {
+  it('sends /result with no reply, such as after a refresh, to the form', async () => {
+    renderApp('/result');
+    expect(address()).toBe('/');
+    expect(
+      screen.getByRole('form', { name: 'Choose a vehicle' }),
+    ).toBeInTheDocument();
+    await waitFor(() => expect(dropdown('Make')).toBeEnabled());
+  });
+
+  it('sends any unknown address to the form', async () => {
+    renderApp('/no/such/page');
+    expect(address()).toBe('/');
+    await waitFor(() => expect(dropdown('Make')).toBeEnabled());
   });
 });

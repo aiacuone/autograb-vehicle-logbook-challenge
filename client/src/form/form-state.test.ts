@@ -228,13 +228,19 @@ describe('submitting', () => {
     expect(formReducer(sending, { type: 'submitStarted' })).toBe(sending);
   });
 
-  it('holds the reply on success', () => {
+  it('holds the reply on success, keeps the vehicle for Back, and lets go of the file', () => {
     const state = after(
       ...withFile,
       { type: 'submitStarted' },
       { type: 'submitSucceeded', reply },
     );
     expect(state.submit).toEqual({ status: 'succeeded', reply });
+    expect([state.make, state.model, state.badge]).toEqual([
+      'ford',
+      'Ranger',
+      'Raptor',
+    ]);
+    expect(state.file).toBeNull();
   });
 
   it('holds the error on failure, and keeps the choices', () => {

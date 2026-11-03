@@ -1,5 +1,11 @@
+import { resolve } from 'node:path';
+import { fileURLToPath } from 'node:url';
 import { describe, expect, it } from 'vitest';
 import { ConfigError, loadConfig } from './config.js';
+
+const builtClient = fileURLToPath(
+  new URL('../../client/dist', import.meta.url),
+);
 
 describe('loadConfig', () => {
   it('uses the defaults when nothing is set', () => {
@@ -9,6 +15,7 @@ describe('loadConfig', () => {
       trustedProxyCount: 0,
       rateLimitWindowMs: 60_000,
       rateLimitMax: 10,
+      clientDir: builtClient,
     });
   });
 
@@ -19,6 +26,7 @@ describe('loadConfig', () => {
       TRUSTED_PROXY_COUNT: '1',
       RATE_LIMIT_WINDOW_MS: '5000',
       RATE_LIMIT_MAX: '3',
+      CLIENT_DIR: 'public',
     });
     expect(config).toEqual({
       port: 8080,
@@ -26,6 +34,7 @@ describe('loadConfig', () => {
       trustedProxyCount: 1,
       rateLimitWindowMs: 5000,
       rateLimitMax: 3,
+      clientDir: resolve('public'),
     });
   });
 

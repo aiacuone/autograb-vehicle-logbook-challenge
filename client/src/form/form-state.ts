@@ -108,7 +108,12 @@ export function formReducer(state: FormState, action: FormAction): FormState {
 
     case 'submitSucceeded':
       if (state.submit.status !== 'sending') return state;
-      return { ...state, submit: { status: 'succeeded', reply: action.reply } };
+      // The vehicle stays for Back. The file is done with, and the form page's input is empty when it returns.
+      return {
+        ...state,
+        file: null,
+        submit: { status: 'succeeded', reply: action.reply },
+      };
 
     case 'submitFailed':
       if (state.submit.status !== 'sending') return state;

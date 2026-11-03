@@ -2,6 +2,7 @@ import type { VehicleData } from '@logbook/shared';
 import express, { type Express } from 'express';
 import helmet from 'helmet';
 import type { Logger } from 'pino';
+import { clientFiles } from './client-files.js';
 import type { Config } from './config.js';
 import { errorHandler } from './error-handler.js';
 import { AppError } from './errors.js';
@@ -16,7 +17,7 @@ export interface AppDependencies {
   logger: Logger;
   config: Pick<
     Config,
-    'trustedProxyCount' | 'rateLimitWindowMs' | 'rateLimitMax'
+    'trustedProxyCount' | 'rateLimitWindowMs' | 'rateLimitMax' | 'clientDir'
   >;
 }
 
@@ -51,6 +52,14 @@ export function createApp({
   app.use('/api', () => {
     throw new AppError('NOT_FOUND', 'That address does not exist.');
   });
+  // After the API, so an /api address is never answered with the app's page
+  const client = clientFiles(config.clientDir);
+  if (client) app.use(client);
+  else
+    logger.info(
+      { clientDir: config.clientDir },
+      'No client build found, serving the API only',
+    );
   app.use(errorHandler);
 
   return app;
