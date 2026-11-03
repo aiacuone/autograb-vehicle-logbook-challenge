@@ -12,6 +12,8 @@ interface OptionSelectProps {
   hint: string;
   /** What the user can do when the list fails to load, for example "Refresh the page to try again." */
   retryHint: string;
+  /** A message about this choice from the server, shown in place of the hint. */
+  error?: string;
   /** How an option is shown. Defaults to the option itself. */
   optionLabel?: (option: string) => string;
   onChange: (value: string | null) => void;
@@ -30,6 +32,7 @@ export function OptionSelect({
   noun,
   hint,
   retryHint,
+  error,
   optionLabel = (option) => option,
   onChange,
 }: OptionSelectProps) {
@@ -37,15 +40,16 @@ export function OptionSelect({
   const placeholder =
     options.status === 'loading' ? `Loading ${noun}s…` : `Choose a ${noun}`;
   const failed = options.status === 'failed';
+  const message =
+    error ??
+    (failed ? `The ${noun}s could not be loaded. ${retryHint}` : undefined);
 
   return (
     <Field
       id={id}
       label={label}
-      hint={failed ? undefined : hint}
-      error={
-        failed ? `The ${noun}s could not be loaded. ${retryHint}` : undefined
-      }
+      hint={message ? undefined : hint}
+      error={message}
     >
       {(control) => (
         <select

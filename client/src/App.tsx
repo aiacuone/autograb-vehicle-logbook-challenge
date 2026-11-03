@@ -4,12 +4,19 @@ import {
   quickSelectVehicles,
   vehicleLabel,
 } from '@logbook/shared';
-import { useReducer } from 'react';
+import { useReducer, type FormEvent } from 'react';
+import { submitLogbook } from './api/submit-logbook';
 import { badgesUrl, makesUrl, modelsUrl } from './api/urls';
 import { useOptions } from './api/use-options';
 import { Layout } from './components/Layout';
+import { LogbookUpload } from './components/LogbookUpload';
 import { OptionSelect } from './components/OptionSelect';
-import { formReducer, initialFormState } from './form/form-state';
+import { Status } from './components/Status';
+import {
+  formReducer,
+  initialFormState,
+  isReadyToSubmit,
+} from './form/form-state';
 
 const chooseAgain = 'Choose again, or refresh the page.';
 
@@ -22,6 +29,32 @@ export function App() {
   const badges = useOptions(
     form.make && form.model ? badgesUrl(form.make, form.model) : null,
   );
+
+  const sending = form.submit.status === 'sending';
+  // A server error belongs beside the input it names. One with no field goes in the message area.
+  const serverError =
+    form.submit.status === 'failed' ? form.submit.error : null;
+  const errorFor = (field: string) =>
+    serverError?.field === field ? serverError.message : undefined;
+  const generalError =
+    serverError &&
+    !['make', 'model', 'badge', 'logbook'].includes(serverError.field ?? '')
+      ? serverError.message
+      : undefined;
+
+  async function submit(event: FormEvent) {
+    event.preventDefault();
+    if (!isReadyToSubmit(form) || sending) return;
+    const { make, model, badge, file } = form;
+    dispatch({ type: 'submitStarted' });
+    const result = await submitLogbook({ make, model, badge }, file);
+    // A choice made while sending resets the status, and the reducer then ignores this reply
+    dispatch(
+      result.ok
+        ? { type: 'submitSucceeded', reply: result.reply }
+        : { type: 'submitFailed', error: result.error },
+    );
+  }
 
   return (
     <Layout>
@@ -43,7 +76,12 @@ export function App() {
         </ul>
       </section>
 
-      <form aria-labelledby="vehicle-heading" className="panel" noValidate>
+      <form
+        aria-labelledby="vehicle-heading"
+        className="panel"
+        noValidate
+        onSubmit={submit}
+      >
         <h2 id="vehicle-heading">Choose a vehicle</h2>
         <OptionSelect
           id="make"
@@ -54,6 +92,7 @@ export function App() {
           optionLabel={makeDisplayName}
           hint="Choose a make to see its models."
           retryHint="Refresh the page to try again."
+          error={errorFor('make')}
           onChange={(make) => dispatch({ type: 'makeChosen', make })}
         />
         <OptionSelect
@@ -68,6 +107,7 @@ export function App() {
               : 'Choose a make first.'
           }
           retryHint={chooseAgain}
+          error={errorFor('model')}
           onChange={(model) => dispatch({ type: 'modelChosen', model })}
         />
         <OptionSelect
@@ -78,6 +118,7 @@ export function App() {
           options={badges}
           hint={form.model ? 'Choose a badge.' : 'Choose a model first.'}
           retryHint={chooseAgain}
+          error={errorFor('badge')}
           onChange={(badge) => dispatch({ type: 'badgeChosen', badge })}
         />
 
@@ -86,7 +127,36 @@ export function App() {
           <p className="hint">
             Choose a make, model and badge first, then upload a plain text file.
           </p>
+          {/* Always in the page, so choosing a badge never moves the button. Until then it is
+              invisible and inert, so it cannot be seen, focused or read out. The key empties
+              the input whenever the state clears the file (a new model, or no badge). */}
+          <div
+            style={form.badge ? undefined : { visibility: 'hidden' }}
+            inert={!form.badge}
+          >
+            <LogbookUpload
+              key={`${form.make}/${form.model}/${form.badge ? 'badge' : 'none'}`}
+              error={errorFor('logbook')}
+              onChange={(file) => dispatch({ type: 'fileChosen', file })}
+            />
+          </div>
+          <button type="submit" disabled={!isReadyToSubmit(form) || sending}>
+            {sending ? 'Sending…' : 'Upload logbook'}
+          </button>
         </section>
+
+        <div className="messages">
+          {sending ? (
+            <Status kind="loading">Sending your logbook…</Status>
+          ) : null}
+          {generalError ? <Status kind="error">{generalError}</Status> : null}
+          {/* Stand-in until #11 shows the result page */}
+          {form.submit.status === 'succeeded' ? (
+            <p className="status" role="status">
+              Uploaded. The result page comes in a later step.
+            </p>
+          ) : null}
+        </div>
       </form>
     </Layout>
   );

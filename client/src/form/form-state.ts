@@ -36,8 +36,16 @@ export const initialFormState: FormState = {
 
 const idle: SubmitStatus = { status: 'idle' };
 
-/** True when everything the upload needs has been chosen. */
-export function isReadyToSubmit(state: FormState): boolean {
+/** A form with everything the upload needs chosen, so none of these can be null. */
+export type ReadyFormState = FormState & {
+  make: string;
+  model: string;
+  badge: string;
+  file: File;
+};
+
+/** True when everything the upload needs has been chosen. As a type guard, it also tells the compiler so. */
+export function isReadyToSubmit(state: FormState): state is ReadyFormState {
   return Boolean(state.make && state.model && state.badge && state.file);
 }
 
