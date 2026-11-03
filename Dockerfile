@@ -9,7 +9,7 @@ COPY package.json package-lock.json ./
 COPY shared/package.json shared/
 COPY server/package.json server/
 COPY client/package.json client/
-RUN npm ci
+RUN npm ci && false
 
 COPY tsconfig.base.json ./
 COPY shared shared
