@@ -2,7 +2,61 @@
 
 A React and TypeScript form to pick a vehicle and upload its service logbook, backed by an Express server.
 
-This README is being written as decisions are made. How to run it, the trade-offs and the next steps are added when the project is built.
+## Run it
+
+You need Node 24 (see `.nvmrc`). The server serves the built client, so the whole app is one process on one port.
+
+```
+npm install
+npm start
+```
+
+Then open http://localhost:3000. `npm start` builds every package and starts the server.
+
+- The line `.env not found. Continuing without it.` is harmless. The settings are optional.
+- If port 3000 is already in use, the server says so and exits. Stop the other program, or choose another port with `PORT=3001 npm start`.
+
+If you have Docker instead:
+
+```
+docker compose up
+```
+
+Then open http://localhost:3000. The image uses Node 24, runs as a non-root user and has a health check.
+
+### Try it
+
+1. Pick a make, a model and a badge, or use one of the two quick-select buttons.
+2. Upload [sample-logbook.txt](sample-logbook.txt). Any plain UTF-8 text file up to 3 MB works.
+3. The result page shows the make, model, badge and the logbook text.
+
+### Develop and test
+
+| Command | What it does |
+|---|---|
+| `npm run dev` | Express and Vite side by side, with reloading |
+| `npm run check` | Lint, build and the unit tests |
+| `npm run typecheck` | Type-check every package |
+| `npm run test:e2e` | The Playwright test of the main flow against the built app (run `npx playwright install chromium` once) |
+
+Server settings are optional and listed in [.env.example](.env.example). Copy it to `.env` to change them. CI runs on every push and pull request with three jobs: the checks, the end-to-end test, and a Docker build with a smoke request ([0021](docs/adr/0021-ci.md)).
+
+## How it works
+
+- `shared/` holds the zod schemas and types that both sides use.
+- `server/` is Express 5. It serves the dropdown options (`/api/makes`, models per make, badges per model) and takes the upload at `POST /api/logbooks`. The server checks everything; the client only does light checks for quick feedback ([0011](docs/adr/0011-where-validation-happens.md)).
+- `client/` is React and TypeScript built with Vite. One reducer holds the form state and clears the dependent dropdowns when the make or model changes ([0005](docs/adr/0005-form-state.md)).
+- The decisions are in [docs/adr](docs/adr/README.md), one record each with the options considered.
+
+## Trade-offs
+
+- **Nothing is stored.** The upload is read into memory, checked and returned. This keeps the server simple and avoids storing users' files, but results are lost on reload ([0007](docs/adr/0007-result-page-and-saved-results.md)).
+- **Vehicle data is a JSON file in memory.** It is validated at startup and needs no database, but changing it needs a deploy ([0012](docs/adr/0012-vehicle-data.md)).
+- **Uploads are judged by content, not name.** Any valid UTF-8 text up to 3 MB is accepted, because file names and type labels come from the client. Other encodings, such as UTF-16, are rejected ([0008](docs/adr/0008-upload-handling.md)).
+- **Rate limiting is per visitor and in memory.** It protects the upload route on one server but resets on restart ([0014](docs/adr/0014-security-hardening.md)).
+- **Accessibility is the basics plus an automated check.** It uses native controls and axe in the end-to-end test, with no manual screen reader session ([0026](docs/adr/0026-accessibility.md)).
+- **One end-to-end test.** It covers the main flow only, and the logic is covered by unit tests ([0006](docs/adr/0006-testing-approach.md)).
+- **Two ways to run it.** Node alone is enough, and Docker is the pinned alternative. That is a longer README and a Docker route that could quietly break, so CI runs it on every push ([0027](docs/adr/0027-two-ways-to-run-it.md)).
 
 ## Technical choices
 
@@ -24,7 +78,7 @@ The larger decisions have their own records, listed in [docs/adr](docs/adr/READM
 
 ## Next steps
 
-Collected from the decisions so far:
+With more time:
 
 - Persist uploads. Nothing from an upload is stored today.
 - Keep the rate-limit counters in a shared store if the app ever runs as several copies.

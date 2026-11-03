@@ -1,0 +1,15 @@
+2024-01-12  12,480 km  Delivery inspection, no faults found
+2024-03-05  15,210 km  Tyre rotation and wheel alignment
+2024-05-21  18,960 km  Oil and filter change
+2024-07-09  21,340 km  Cabin air filter replaced
+2024-09-30  24,775 km  First scheduled service, all fluids topped up
+2024-11-14  26,120 km  Wiper blades replaced
+2025-01-22  29,430 km  Front brake pads replaced
+2025-03-18  31,900 km  Tyre rotation, tyre pressures reset
+2025-05-27  34,650 km  Oil and filter change
+2025-08-06  37,210 km  Coolant level checked and topped up
+2025-10-15  39,880 km  Second scheduled service, all fluids topped up
+2025-12-02  41,560 km  Rear brake pads replaced
+2026-02-10  44,300 km  Battery health check, passed
+2026-04-21  46,975 km  Oil and filter change
+2026-06-09  49,310 km  Annual service, all fluids topped up
