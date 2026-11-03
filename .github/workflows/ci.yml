@@ -1,0 +1,75 @@
+# Runs on every push and pull request (ADR 0021). Three independent jobs, so a flaky
+# end-to-end run does not hide the result of the checks.
+name: CI
+
+on:
+  push:
+  pull_request:
+
+# A newer push to the same branch makes the older run pointless
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  checks:
+    name: Checks
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
+        with:
+          node-version-file: .nvmrc
+          cache: npm
+      - run: npm ci
+      - run: npm run lint
+      - run: npm run build
+      - run: npm run typecheck
+      - run: npm test
+
+  end-to-end:
+    name: End-to-end
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
+        with:
+          node-version-file: .nvmrc
+          cache: npm
+      - run: npm ci
+      # The test builds the app and starts it on port 3100 itself (playwright.config.ts)
+      - run: npx playwright install --with-deps chromium
+      - run: npm run test:e2e
+      - uses: actions/upload-artifact@v7
+        if: failure()
+        with:
+          name: playwright-traces
+          path: test-results/
+          if-no-files-found: ignore
+          retention-days: 7
+
+  docker:
+    name: Docker
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v7
+      # --wait returns once the image's health check passes, and fails if it never does
+      - name: Build the image and start it
+        run: docker compose up --build --detach --wait --wait-timeout 90
+      - name: Request the page, a client route and an API route
+        run: |
+          curl --fail --silent --show-error http://localhost:3000/ | grep -q '<title>Vehicle logbook</title>'
+          curl --fail --silent --show-error --output /dev/null http://localhost:3000/result
+          curl --fail --silent --show-error http://localhost:3000/api/makes | grep -q '"ford"'
+      - name: Show the container logs
+        if: failure()
+        run: docker compose logs
+      - name: Stop the container
+        if: always()
+        run: docker compose down
