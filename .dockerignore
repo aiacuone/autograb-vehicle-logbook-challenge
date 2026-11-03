@@ -1,0 +1,18 @@
+# Never in the image: the private brief, secrets and version control
+_brief
+.env
+.git
+
+# Rebuilt inside the image
+node_modules
+**/dist
+**/coverage
+
+# Not needed to build or run
+e2e
+test-results
+playwright-report
+docs
+*.md
+.vscode
+.idea

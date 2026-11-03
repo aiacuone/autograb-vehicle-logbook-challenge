@@ -1,0 +1,14 @@
+# Start the app with: docker compose up
+# Then open http://localhost:3000
+services:
+  app:
+    build: .
+    image: vehicle-logbook
+    ports:
+      - '3000:3000'
+    restart: unless-stopped
+    # Nothing here needs extra privileges, so it gets none
+    cap_drop:
+      - ALL
+    security_opt:
+      - no-new-privileges:true

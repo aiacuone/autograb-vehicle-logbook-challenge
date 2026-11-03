@@ -1,6 +1,6 @@
 # 0010. How reviewers run the project
 
-Status: accepted
+Status: superseded by [0027](0027-two-ways-to-run-it.md)
 
 ## Context
 
