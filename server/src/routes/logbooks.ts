@@ -88,10 +88,14 @@ function checkVehicle(body: unknown, vehicles: VehicleData): SubmitFields {
 }
 
 /** Receives a vehicle and its logbook, and replies with both. Nothing is stored. */
-export function logbookRoutes(vehicles: VehicleData): Router {
+export function logbookRoutes(
+  vehicles: VehicleData,
+  rateLimit: RequestHandler,
+): Router {
   const router = Router();
 
-  router.post('/logbooks', receiveUpload, (req, res) => {
+  // The rate limit runs first, so a flood is refused before any file is read
+  router.post('/logbooks', rateLimit, receiveUpload, (req, res) => {
     const vehicle = checkVehicle(req.body, vehicles);
     if (!req.file) {
       throw new AppError(

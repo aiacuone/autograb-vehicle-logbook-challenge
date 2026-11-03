@@ -12,7 +12,7 @@ try {
   const config = loadConfig();
   const vehicles = loadVehicleData(vehicleDataPath);
   const logger = createLogger(config.logLevel);
-  const app = createApp({ vehicles, logger });
+  const app = createApp({ vehicles, logger, config });
   app.listen(config.port, () => {
     logger.info(
       { port: config.port, makes: Object.keys(vehicles).length },
@@ -20,9 +20,13 @@ try {
     );
   });
 } catch (error) {
+  // A failure before the server starts is still one JSON line, at fatal level. The
+  // configured log level may be the thing that failed, so this logger uses info.
+  const startupLogger = createLogger('info');
   if (error instanceof ConfigError || error instanceof VehicleDataError) {
-    console.error(error.message);
-    process.exit(1);
+    startupLogger.fatal(error.message);
+  } else {
+    startupLogger.fatal({ err: error }, 'The server could not start');
   }
-  throw error;
+  process.exit(1);
 }

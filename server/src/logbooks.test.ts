@@ -7,6 +7,7 @@ import {
 import request from 'supertest';
 import { describe, expect, it } from 'vitest';
 import { createApp } from './app.js';
+import { loadConfig } from './config.js';
 import { createLogger } from './logger.js';
 import { loadVehicleData } from './vehicles.js';
 
@@ -20,7 +21,7 @@ function testApp() {
     write: (line: string) => void lines.push(line),
   });
   return {
-    app: createApp({ vehicles, logger }),
+    app: createApp({ vehicles, logger, config: loadConfig({}) }),
     logText: () => lines.join('\n'),
   };
 }

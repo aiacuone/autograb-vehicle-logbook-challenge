@@ -9,6 +9,7 @@ import express from 'express';
 import request from 'supertest';
 import { describe, expect, it } from 'vitest';
 import { createApp } from './app.js';
+import { loadConfig } from './config.js';
 import { errorHandler } from './error-handler.js';
 import { createLogger, requestLogger } from './logger.js';
 import { loadVehicleData } from './vehicles.js';
@@ -31,7 +32,7 @@ function testApp() {
   const logger = createLogger('info', {
     write: (line: string) => void lines.push(line),
   });
-  const app = createApp({ vehicles, logger });
+  const app = createApp({ vehicles, logger, config: loadConfig({}) });
   return {
     app,
     logger,
