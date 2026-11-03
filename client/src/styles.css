@@ -83,15 +83,36 @@ select:disabled {
   cursor: not-allowed;
 }
 
+.quick-select {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
 .hint {
   margin: 0.25rem 0 0;
   color: var(--muted);
   font-size: 0.9rem;
 }
 
+/* Two lines of 0.9rem text at line-height 1.5, so a wrapped error on a phone still fits */
+.field-message {
+  min-height: 2.7rem;
+  margin-top: 0.25rem;
+}
+
+.field-message > p {
+  margin: 0;
+}
+
+/* The same size as .hint, because an error takes the hint's place */
 .field-error {
   margin: 0.25rem 0 0;
   color: var(--error);
+  font-size: 0.9rem;
   font-weight: 600;
 }
 

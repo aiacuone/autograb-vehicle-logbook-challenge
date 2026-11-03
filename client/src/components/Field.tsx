@@ -33,16 +33,19 @@ export function Field({ id, label, hint, error, children }: FieldProps) {
         'aria-describedby': describedBy || undefined,
         'aria-invalid': error ? true : undefined,
       })}
-      {hint ? (
-        <p id={hintId} className="hint">
-          {hint}
-        </p>
-      ) : null}
-      {error ? (
-        <p id={errorId} className="field-error" role="alert">
-          {error}
-        </p>
-      ) : null}
+      {/* Holds two lines whatever it shows, so a hint turning into an error never moves the page */}
+      <div className="field-message">
+        {hint ? (
+          <p id={hintId} className="hint">
+            {hint}
+          </p>
+        ) : null}
+        {error ? (
+          <p id={errorId} className="field-error" role="alert">
+            {error}
+          </p>
+        ) : null}
+      </div>
     </div>
   );
 }

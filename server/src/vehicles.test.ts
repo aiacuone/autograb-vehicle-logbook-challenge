@@ -1,5 +1,11 @@
 import { fileURLToPath } from 'node:url';
+import {
+  makeDisplayNames,
+  quickSelectVehicles,
+  vehicleLabel,
+} from '@logbook/shared';
 import { describe, expect, it } from 'vitest';
+import { findBadges } from './vehicle-lookup.js';
 import {
   VehicleDataError,
   loadVehicleData,
@@ -15,6 +21,22 @@ describe('the real vehicle data file', () => {
     const data = loadVehicleData(realFile);
     expect(Object.keys(data).sort()).toEqual(['bmw', 'ford', 'tesla']);
     expect(data.ford?.['Ranger']).toContain('Raptor');
+  });
+});
+
+describe('the shared display data against the real vehicle data', () => {
+  const data = loadVehicleData(realFile);
+
+  it('has a display name for every make', () => {
+    for (const make of Object.keys(data)) {
+      expect(Object.hasOwn(makeDisplayNames, make), make).toBe(true);
+    }
+  });
+
+  it.each(
+    quickSelectVehicles.map((vehicle) => [vehicleLabel(vehicle), vehicle]),
+  )('has the quick-select vehicle %s', (_label, { make, model, badge }) => {
+    expect(findBadges(data, make, model)).toContain(badge);
   });
 });
 

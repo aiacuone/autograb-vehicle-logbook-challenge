@@ -1,51 +1,85 @@
-import { APP_NAME } from '@logbook/shared';
-import { Field } from './components/Field';
+import {
+  APP_NAME,
+  makeDisplayName,
+  quickSelectVehicles,
+  vehicleLabel,
+} from '@logbook/shared';
+import { useReducer } from 'react';
+import { badgesUrl, makesUrl, modelsUrl } from './api/urls';
+import { useOptions } from './api/use-options';
 import { Layout } from './components/Layout';
-import { Status } from './components/Status';
+import { OptionSelect } from './components/OptionSelect';
+import { formReducer, initialFormState } from './form/form-state';
 
-export interface PageStatus {
-  kind: 'loading' | 'error';
-  message: string;
-}
+const chooseAgain = 'Choose again, or refresh the page.';
 
-interface AppProps {
-  /** A page-wide loading or error message. Nothing is shown when it is not set. */
-  status?: PageStatus;
-}
+export function App() {
+  const [form, dispatch] = useReducer(formReducer, initialFormState);
 
-export function App({ status }: AppProps) {
+  // Each list's url is null until its parent is chosen, so a cleared parent stops its request
+  const makes = useOptions(makesUrl);
+  const models = useOptions(form.make ? modelsUrl(form.make) : null);
+  const badges = useOptions(
+    form.make && form.model ? badgesUrl(form.make, form.model) : null,
+  );
+
   return (
     <Layout>
       <h1>{APP_NAME}</h1>
 
       <section aria-labelledby="quick-select-heading" className="panel">
         <h2 id="quick-select-heading">Quick select</h2>
-        <p className="hint">Common vehicles will appear here.</p>
+        <ul className="quick-select">
+          {quickSelectVehicles.map((vehicle) => (
+            <li key={vehicleLabel(vehicle)}>
+              <button
+                type="button"
+                onClick={() => dispatch({ type: 'vehicleChosen', ...vehicle })}
+              >
+                {vehicleLabel(vehicle)}
+              </button>
+            </li>
+          ))}
+        </ul>
       </section>
 
       <form aria-labelledby="vehicle-heading" className="panel" noValidate>
         <h2 id="vehicle-heading">Choose a vehicle</h2>
-        <Field id="make" label="Make" hint="Choose a make to see its models.">
-          {(control) => (
-            <select {...control} disabled>
-              <option>Choose a make</option>
-            </select>
-          )}
-        </Field>
-        <Field id="model" label="Model" hint="Choose a make first.">
-          {(control) => (
-            <select {...control} disabled>
-              <option>Choose a model</option>
-            </select>
-          )}
-        </Field>
-        <Field id="badge" label="Badge" hint="Choose a model first.">
-          {(control) => (
-            <select {...control} disabled>
-              <option>Choose a badge</option>
-            </select>
-          )}
-        </Field>
+        <OptionSelect
+          id="make"
+          label="Make"
+          noun="make"
+          value={form.make}
+          options={makes}
+          optionLabel={makeDisplayName}
+          hint="Choose a make to see its models."
+          retryHint="Refresh the page to try again."
+          onChange={(make) => dispatch({ type: 'makeChosen', make })}
+        />
+        <OptionSelect
+          id="model"
+          label="Model"
+          noun="model"
+          value={form.model}
+          options={models}
+          hint={
+            form.make
+              ? 'Choose a model to see its badges.'
+              : 'Choose a make first.'
+          }
+          retryHint={chooseAgain}
+          onChange={(model) => dispatch({ type: 'modelChosen', model })}
+        />
+        <OptionSelect
+          id="badge"
+          label="Badge"
+          noun="badge"
+          value={form.badge}
+          options={badges}
+          hint={form.model ? 'Choose a badge.' : 'Choose a model first.'}
+          retryHint={chooseAgain}
+          onChange={(badge) => dispatch({ type: 'badgeChosen', badge })}
+        />
 
         <section aria-labelledby="upload-heading" className="upload">
           <h2 id="upload-heading">Upload your logbook</h2>
@@ -53,10 +87,6 @@ export function App({ status }: AppProps) {
             Choose a make, model and badge first, then upload a plain text file.
           </p>
         </section>
-
-        <div className="messages">
-          {status ? <Status kind={status.kind}>{status.message}</Status> : null}
-        </div>
       </form>
     </Layout>
   );
