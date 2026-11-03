@@ -1,6 +1,7 @@
 import { fileURLToPath } from 'node:url';
 import { createApp } from './app.js';
 import { ConfigError, loadConfig } from './config.js';
+import { listen } from './listen.js';
 import { createLogger } from './logger.js';
 import { VehicleDataError, loadVehicleData } from './vehicles.js';
 
@@ -13,11 +14,8 @@ try {
   const vehicles = loadVehicleData(vehicleDataPath);
   const logger = createLogger(config.logLevel);
   const app = createApp({ vehicles, logger, config });
-  app.listen(config.port, () => {
-    logger.info(
-      { port: config.port, makes: Object.keys(vehicles).length },
-      'Server listening',
-    );
+  listen(app, config.port, logger, process.exit, {
+    makes: Object.keys(vehicles).length,
   });
 } catch (error) {
   // A failure before the server starts is still one JSON line, at fatal level. The
