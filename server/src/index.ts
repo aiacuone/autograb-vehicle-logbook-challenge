@@ -1,6 +1,7 @@
 import { fileURLToPath } from 'node:url';
+import { createApp } from './app.js';
 import { ConfigError, loadConfig } from './config.js';
-import { startMessage } from './start-message.js';
+import { createLogger } from './logger.js';
 import { VehicleDataError, loadVehicleData } from './vehicles.js';
 
 const vehicleDataPath = fileURLToPath(
@@ -10,9 +11,14 @@ const vehicleDataPath = fileURLToPath(
 try {
   const config = loadConfig();
   const vehicles = loadVehicleData(vehicleDataPath);
-  console.log(
-    `${startMessage()}: ${Object.keys(vehicles).length} makes loaded, port ${config.port}`,
-  );
+  const logger = createLogger(config.logLevel);
+  const app = createApp({ vehicles, logger });
+  app.listen(config.port, () => {
+    logger.info(
+      { port: config.port, makes: Object.keys(vehicles).length },
+      'Server listening',
+    );
+  });
 } catch (error) {
   if (error instanceof ConfigError || error instanceof VehicleDataError) {
     console.error(error.message);
