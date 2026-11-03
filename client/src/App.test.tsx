@@ -4,6 +4,7 @@ import userEvent from '@testing-library/user-event';
 import { MemoryRouter, useLocation } from 'react-router';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { App } from './App';
+import { accessibilityProblems } from './axe';
 
 // A small copy of the vehicle data, so these tests do not depend on the server's file
 const vehicles: Record<string, Record<string, string[]>> = {
@@ -418,11 +419,24 @@ describe('the upload', () => {
     fetchMock.mockImplementation(() => new Promise(() => {}));
     await user.click(uploadButton());
 
-    expect(uploadButton()).toBeDisabled();
+    // aria-disabled and not disabled, so the button keeps keyboard focus while sending
+    expect(uploadButton()).toHaveAttribute('aria-disabled', 'true');
     expect(uploadButton()).toHaveTextContent('Sending…');
-    expect(screen.getByRole('status')).toHaveTextContent(
-      'Sending your logbook…',
+    expect(screen.getByText('Sending your logbook…')).toHaveAttribute(
+      'role',
+      'status',
     );
+  });
+
+  it('sends once when the button is pressed again while sending', async () => {
+    const user = await renderLoaded();
+    await chooseVehicle(user);
+    await user.upload(fileInput(), logbook);
+    fetchMock.mockImplementation(() => new Promise(() => {}));
+    await user.click(uploadButton());
+    await user.click(uploadButton());
+    await user.keyboard('{Enter}');
+    expect(posts()).toHaveLength(1);
   });
 
   it('ignores a late reply after the user changes a choice', async () => {
@@ -550,5 +564,155 @@ describe('addresses', () => {
     renderApp('/no/such/page');
     expect(address()).toBe('/');
     await waitFor(() => expect(dropdown('Make')).toBeEnabled());
+  });
+});
+
+describe('accessibility', () => {
+  const main = () => screen.getByRole('main');
+
+  /** Chooses the vehicle and a file, then uploads, with the server answering `status`. */
+  async function failUpload(error: Record<string, string>) {
+    const user = await renderLoaded();
+    await chooseVehicle(user);
+    await user.upload(fileInput(), logbook);
+    fetchMock.mockImplementation(() => json(error, 400));
+    await user.click(uploadButton());
+    await screen.findByRole('alert');
+    return user;
+  }
+
+  describe('axe finds no problems', () => {
+    it('on the form while the lists load', async () => {
+      renderApp();
+      expect(await accessibilityProblems(main())).toEqual([]);
+      await waitFor(() => expect(dropdown('Make')).toBeEnabled());
+    });
+
+    it('on the form with the lists loaded', async () => {
+      await renderLoaded();
+      expect(await accessibilityProblems(main())).toEqual([]);
+    });
+
+    it('on the form with a vehicle chosen', async () => {
+      const user = await renderLoaded();
+      await chooseVehicle(user);
+      await user.upload(fileInput(), logbook);
+      expect(await accessibilityProblems(main())).toEqual([]);
+    });
+
+    it('with a list that failed to load', async () => {
+      fetchMock.mockImplementation(() => json({ code: 'INTERNAL_ERROR' }, 500));
+      renderApp();
+      await screen.findByRole('alert');
+      expect(await accessibilityProblems(main())).toEqual([]);
+    });
+
+    it('with a server error beside the file input', async () => {
+      await failUpload({
+        code: 'FILE_NOT_TEXT',
+        message: 'Only plain text files are accepted.',
+        field: 'logbook',
+      });
+      expect(await accessibilityProblems(main())).toEqual([]);
+    });
+
+    it('with an error with no field', async () => {
+      await failUpload({ code: 'RATE_LIMITED', message: 'Too many uploads.' });
+      expect(await accessibilityProblems(main())).toEqual([]);
+    });
+
+    it('on the result page', async () => {
+      fetchMock.mockImplementation((url: string, init?: RequestInit) =>
+        init?.method === 'POST'
+          ? json({
+              make: 'ford',
+              model: 'Ranger',
+              badge: 'Raptor',
+              logbook: 'trip',
+            })
+          : fakeServer(url),
+      );
+      const user = await renderLoaded();
+      await chooseVehicle(user);
+      await user.upload(fileInput(), logbook);
+      await user.click(uploadButton());
+      await screen.findByRole('heading', { name: 'Your logbook' });
+      expect(await accessibilityProblems(main())).toEqual([]);
+    });
+  });
+
+  describe('the keyboard', () => {
+    it('reaches the controls in reading order, and skips the ones that are disabled', async () => {
+      const user = await renderLoaded();
+      const order: string[] = [];
+      for (let i = 0; i < 3; i++) {
+        await user.tab();
+        const focused = document.activeElement;
+        order.push(focused?.id || focused?.textContent || '');
+      }
+      // Two quick-select buttons, then the only enabled dropdown. Model and Badge are disabled.
+      expect(order).toEqual([
+        'Ford Ranger Raptor',
+        'Tesla Model 3 Long Range',
+        'make',
+      ]);
+    });
+
+    it('works from the first button to the upload without a mouse', async () => {
+      const user = await renderLoaded();
+      await user.tab();
+      await user.keyboard('{Enter}');
+      await waitFor(() => expect(dropdown('Badge')).toHaveValue('Raptor'));
+
+      await user.upload(fileInput(), logbook);
+      uploadButton().focus();
+      await user.keyboard('{Enter}');
+      expect(
+        await screen.findByRole('heading', { name: 'Your logbook' }),
+      ).toHaveFocus();
+    });
+  });
+
+  describe('errors', () => {
+    it('move focus to the input the error names, which the error describes', async () => {
+      await failUpload({
+        code: 'FILE_NOT_TEXT',
+        message: 'Only plain text files are accepted.',
+        field: 'logbook',
+      });
+      expect(fileInput()).toHaveFocus();
+      expect(fileInput()).toHaveAccessibleDescription(
+        'Only plain text files are accepted.',
+      );
+      expect(fileInput()).toHaveAttribute('aria-invalid', 'true');
+    });
+
+    it('move focus to a dropdown when the error names one', async () => {
+      await failUpload({
+        code: 'INVALID_FIELD',
+        message: 'That badge does not belong to the model.',
+        field: 'badge',
+      });
+      expect(dropdown('Badge')).toHaveFocus();
+    });
+
+    it('leave focus where it was when the error names no input', async () => {
+      await failUpload({ code: 'RATE_LIMITED', message: 'Too many uploads.' });
+      expect(uploadButton()).toHaveFocus();
+      expect(screen.getByRole('alert')).toHaveTextContent('Too many uploads.');
+    });
+  });
+
+  describe('loading', () => {
+    it('is announced politely, and the announcement clears when the list arrives', async () => {
+      renderApp();
+      const announcement = screen
+        .getAllByRole('status')
+        .find((element) => element.textContent?.startsWith('Loading the'));
+      expect(announcement).toHaveTextContent('Loading the makes…');
+
+      await waitFor(() => expect(dropdown('Make')).toBeEnabled());
+      expect(announcement).toBeEmptyDOMElement();
+    });
   });
 });

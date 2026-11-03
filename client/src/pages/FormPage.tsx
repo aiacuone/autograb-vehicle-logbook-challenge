@@ -48,6 +48,24 @@ export function FormPage({ form, dispatch, options }: FormPageProps) {
       ? serverError.message
       : undefined;
 
+  // After a failed upload, focus the input the error names. The error is already linked to
+  // it, so a screen reader reads the label and the message together. An error with no field
+  // is announced in the message area and moves no focus.
+  const failedField =
+    form.submit.status === 'failed' ? form.submit.error.field : undefined;
+  useEffect(() => {
+    if (failedField) document.getElementById(failedField)?.focus();
+  }, [failedField, form.submit]);
+
+  // Said politely to screen readers while a list loads, since the dropdown's own
+  // "Loading…" text changes inside a control that is not announced
+  const loadingList = [
+    { name: 'makes', state: makes },
+    { name: 'models', state: models },
+    { name: 'badges', state: badges },
+  ].find((list) => list.state.status === 'loading');
+  const loadingMessage = loadingList ? `Loading the ${loadingList.name}…` : '';
+
   async function submit(event: FormEvent) {
     event.preventDefault();
     if (!isReadyToSubmit(form) || sending) return;
@@ -66,6 +84,11 @@ export function FormPage({ form, dispatch, options }: FormPageProps) {
 
   return (
     <>
+      {/* Always in the page, because a live region is announced when its text changes */}
+      <p role="status" className="visually-hidden">
+        {loadingMessage}
+      </p>
+
       <section aria-labelledby="quick-select-heading" className="panel">
         <h2 id="quick-select-heading">Quick select</h2>
         <ul className="quick-select">
@@ -146,7 +169,13 @@ export function FormPage({ form, dispatch, options }: FormPageProps) {
               onChange={(file) => dispatch({ type: 'fileChosen', file })}
             />
           </div>
-          <button type="submit" disabled={!isReadyToSubmit(form) || sending}>
+          {/* aria-disabled, not disabled, while sending: a browser drops focus from a control that
+              becomes disabled, so a keyboard user would lose their place. submit() ignores the click. */}
+          <button
+            type="submit"
+            disabled={!isReadyToSubmit(form)}
+            aria-disabled={sending || undefined}
+          >
             {sending ? 'Sending…' : 'Upload logbook'}
           </button>
         </section>
