@@ -13,8 +13,8 @@ npm start
 
 Then open http://localhost:3000. `npm start` builds every package and starts the server.
 
-- The line `.env not found. Continuing without it.` is harmless. The settings are optional.
-- If port 3000 is already in use, the server says so and exits. Stop the other program, or choose another port with `PORT=3001 npm start`.
+- The line `../.env not found. Continuing without it.` is harmless. The settings are optional.
+- If port 3000 is already in use, the server says so and exits. Stop the other program, or choose another port with `PORT=3001 npm start`. In Windows PowerShell, use `$env:PORT=3001; npm start`. For Docker, change the left side of `'3000:3000'` in `compose.yaml`.
 
 If you have Docker instead:
 
@@ -27,7 +27,7 @@ Then open http://localhost:3000. The image uses Node 24, runs as a non-root user
 ### Try it
 
 1. Pick a make, a model and a badge, or use one of the two quick-select buttons.
-2. Upload [sample-logbook.txt](sample-logbook.txt). Any plain UTF-8 text file up to 3 MB works.
+2. Upload [sample-logbook.txt](sample-logbook.txt). The file picker offers `.txt`, `.log` and plain text files. The server accepts any non-empty UTF-8 text up to 3 MB, whatever the file is called.
 3. The result page shows the make, model, badge and the logbook text.
 
 ### Develop and test
@@ -37,7 +37,7 @@ Then open http://localhost:3000. The image uses Node 24, runs as a non-root user
 | `npm run dev` | Express and Vite side by side, with reloading |
 | `npm run check` | Lint, build and the unit tests |
 | `npm run typecheck` | Type-check every package |
-| `npm run test:e2e` | The Playwright test of the main flow against the built app (run `npx playwright install chromium` once) |
+| `npm run test:e2e` | The Playwright test of the main flow against the built app (run `npx playwright install --with-deps chromium` once on Linux, or `npx playwright install chromium` elsewhere) |
 
 Server settings are optional and listed in [.env.example](.env.example). Copy it to `.env` to change them. CI runs on every push and pull request with three jobs: the checks, the end-to-end test, and a Docker build with a smoke request ([0021](docs/adr/0021-ci.md)).
 
@@ -52,7 +52,7 @@ Server settings are optional and listed in [.env.example](.env.example). Copy it
 
 - **Nothing is stored.** The upload is read into memory, checked and returned. This keeps the server simple and avoids storing users' files, but results are lost on reload ([0007](docs/adr/0007-result-page-and-saved-results.md)).
 - **Vehicle data is a JSON file in memory.** It is validated at startup and needs no database, but changing it needs a deploy ([0012](docs/adr/0012-vehicle-data.md)).
-- **Uploads are judged by content, not name.** Any valid UTF-8 text up to 3 MB is accepted, because file names and type labels come from the client. Other encodings, such as UTF-16, are rejected ([0008](docs/adr/0008-upload-handling.md)).
+- **The server judges uploads by content, not name.** Any valid UTF-8 text up to 3 MB is accepted, because file names and type labels come from the client. The file picker still suggests `.txt` and `.log` for convenience, but it is not a check. Empty files, control characters and other encodings, such as UTF-16, are rejected ([0008](docs/adr/0008-upload-handling.md)).
 - **Rate limiting is per visitor and in memory.** It protects the upload route on one server but resets on restart ([0014](docs/adr/0014-security-hardening.md)).
 - **Accessibility is the basics plus an automated check.** It uses native controls and axe in the end-to-end test, with no manual screen reader session ([0026](docs/adr/0026-accessibility.md)).
 - **One end-to-end test.** It covers the main flow only, and the logic is covered by unit tests ([0006](docs/adr/0006-testing-approach.md)).
