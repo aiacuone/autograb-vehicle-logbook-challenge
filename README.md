@@ -39,7 +39,7 @@ Then open http://localhost:3000. The image uses Node 24, runs as a non-root user
 | `npm run typecheck` | Type-check every package |
 | `npm run test:e2e` | The Playwright test of the main flow against the built app (run `npx playwright install --with-deps chromium` once on Linux, or `npx playwright install chromium` elsewhere) |
 
-Server settings are optional and listed in [.env.example](.env.example). Copy it to `.env` to change them. CI runs on every push and pull request with three jobs: the checks, the end-to-end test, and a Docker build with a smoke request ([0021](docs/adr/0021-ci.md)).
+Server settings are optional and listed in [.env.example](.env.example). Copy it to `.env` to change them. CI runs on every push and pull request with three jobs: the checks, the end-to-end test, and a Docker build with a smoke request ([0021](docs/adr/0021-ci.md)). The runs are listed on the [Actions page](https://github.com/aiacuone/autograb-vehicle-logbook-challenge/actions).
 
 ## How it works
 
